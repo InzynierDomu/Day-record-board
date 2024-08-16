@@ -1,20 +1,12 @@
 #include <Arduino.h>
 #include "IRremote.h"
+#include "Config.h"
 
-// Ustaw pin, do którego podłączona jest dioda IR
-const int RECV_PIN = 11;
-
-// Stwórz obiekt IRrecv do odbierania danych z diody IR
-IRrecv irrecv(RECV_PIN);
-
-// Zmienna do przechowywania odebranego sygnału IR
-decode_results results;
+IRrecv irrecv(Config::pin_led_ir);
 
 void setup() {
-  // Inicjalizacja komunikacji szeregowej
-  Serial.begin(9600);
+  Serial.begin(115200);
   
-  // Uruchomienie odbiornika IR
   irrecv.enableIRIn(); 
 }
 
