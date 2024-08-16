@@ -1,6 +1,8 @@
-#include <Arduino.h>
-#include "IRremote.h"
+
 #include "Config.h"
+#include "IRremote.h"
+
+#include <Arduino.h>
 
 IRrecv irrecv(Config::pin_led_ir);
 
