@@ -7,7 +7,6 @@
 
 namespace Config
 {
-    const uint8_t pin_led_ir = 36;
     const uint8_t screens_count = 7;
     const uint8_t *font = Arial14;
 
