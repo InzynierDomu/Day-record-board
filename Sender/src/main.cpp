@@ -14,11 +14,28 @@ enum class Device_state
   set_rtc
 };
 
+enum command
+{
+  BTN_0 = 0,
+  BTN_1,
+  BTN_2,
+  BTN_3,
+  BTN_4,
+  BTN_5,
+  BTN_6,
+  BTN_7,
+  BTN_8,
+  BTN_9,
+  BTN_PALY = 10,
+  BTN_NEXT = 11,
+  BTN_PREVIOUS = 12
+};
+
 Device_state m_device_state = Device_state::startup; ///< actual device state
 
 IRrecv irrecv(Config::pin_led_ir);
 
-int16_t dataToSend[7] = {1234, -5678, 910, 1112, 1314, 1516, 1718};
+int16_t dataToSend[7] = {1234, 5678, 910, 1112, 1314, 1516, 1718};
 
 const unsigned long m_refresh_time_ms = 30000;
 
@@ -45,16 +62,9 @@ void setup() {
 void button_action()
 {
 if (IrReceiver.decodedIRData.protocol == NEC) {
-      Serial.println("ok protocol");
-    }
-    else
-    {
-      Serial.println("wrong protocol");
-    }
-    Serial.print("command");
     auto command = IrReceiver.decodedIRData.command;
-    Serial.println(command);
     IrReceiver.resume();
+}
 }
 void loop() {
   if(IrReceiver.decode()){
