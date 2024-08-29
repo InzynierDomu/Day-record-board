@@ -76,11 +76,21 @@ Device_state m_device_state = Device_state::startup; ///< actual device state
 
 IRrecv irrecv(Config::pin_led_ir);
 
-int16_t dataToSend[7] = {1234, 5678, 910, 1112, 1314, 1516, 1718};
+int16_t days_counter[7] = {1234, 5678, 910, 1112, 1314, 1516, 1718};
 
 const unsigned long m_refresh_time_ms = 30000;
 
 RTC_DS3231 rtc;
+
+long days;
+
+long get_days_from_start()
+{
+  auto now = rtc.now();
+  DateTime startDate(2024, 1, 1, 0, 0, 0);
+  TimeSpan timeSpan = now - startDate;
+  return timeSpan.days();
+}
 void setup()
 {
   Serial.begin(9600);
@@ -98,6 +108,7 @@ void setup()
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
   rtc.disable32K();
+  days = get_days_from_start();
 
   m_device_state = Device_state::refersh;
 }
@@ -115,13 +126,30 @@ Button button_action()
   return (BTN_ERR);
 }
 
-void refresh()
+void blink(int16_t* table, int8_t blink_screen)
+{
+  long loop_time = millis();
+  static long time;
+  static bool toggle;
+
+  if (loop_time - time > 100)
+  {
+    time = millis();
+    toggle = !toggle;
+  }
+
+  if (toggle)
+  {}
+  else
+  {}
+}
+void show(int16_t* table)
 {
   String dataString = "";
 
   for (int i = 0; i < 7; i++)
   {
-    dataString += String(dataToSend[i]); // Konwersja liczby na String i dodanie do ciągu
+    dataString += String(table[i]); // Konwersja liczby na String i dodanie do ciągu
     if (i < 6)
     {
       dataString += ","; // Dodanie przecinka i spacji po każdej liczbie, z wyjątkiem ostatniej
@@ -129,10 +157,57 @@ void refresh()
   }
 
   Serial.println(dataString);
+}
+void refresh()
+{
+  show(days_counter);
 
   m_device_state = Device_state::idle;
 }
 
+void set_rtc(Button action)
+{
+  switch (action)
+  {
+    case Button::BTN_NEXT:
+      break;
+    case Button::BTN_PREVIOUS:
+      break;
+    default:
+      break;
+  }
+}
+
+void increment_counter(long days_count)
+{
+  for (int i = 0; i < 6; i++)
+  {
+    days_counter[i] += days_count;
+  }
+}
+
+void check_record()
+{
+  for (int i = 0; i < 6; i++)
+  {
+    auto check_counter = days_counter[i];
+    if (check_counter > days_counter[6])
+    {
+      days_counter[6] = check_counter;
+    }
+  }
+}
+void check_day()
+{
+  auto now = get_days_from_start();
+  if (days < now)
+  {
+    auto new_days = get_days_from_start() - days;
+    increment_counter(new_days);
+    check_record();
+    days = now;
+  }
+}
 void idle(Button action)
 {
   switch (action)
@@ -142,6 +217,7 @@ void idle(Button action)
       break;
     default:
     {
+      check_day();
       static unsigned long last_loop_time = 0;
       unsigned long loop_time = millis();
       if (loop_time - last_loop_time > m_refresh_time_ms)
@@ -154,11 +230,13 @@ void idle(Button action)
   }
 }
 
-void reset_cunter()
+void reset_cunter(Button action)
 {
-  dataToSend[0] = 0;
-  // temp
-  m_device_state = Device_state::refersh;
+  days_counter[0] = 0;
+  if (action == Button::BTN_PALY)
+  {
+    m_device_state = Device_state::refersh;
+  }
 }
 void loop()
 {
@@ -182,7 +260,7 @@ void loop()
     }
     break;
     case Device_state::reset_counter:
-      reset_cunter();
+      reset_cunter(action);
       break;
     default:
       break;
