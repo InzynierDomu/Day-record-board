@@ -4,30 +4,23 @@
 
 #include <Arduino.h>
 
-SoftDMD dmd(1, 2);
-// DMD_TextBox box(dmd);
+SoftDMD dmd(1, Config::screens_count);
 
-const int arraySize = 7;
-// int16_t receivedData[arraySize];
-// const int numOfTokens = 7;
-String tokens[arraySize];
+String tokens[Config::screens_count];
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(2400);
 
   dmd.setBrightness(255);
   dmd.selectFont(Config::font);
   dmd.begin();
-
-  // box.print("ID");
 }
 
 void loop()
 {
   if (Serial.available() > 0)
   {
-
     String receivedMessage = Serial.readStringUntil('\n');
 
     char receivedChars[receivedMessage.length() + 1];
@@ -37,7 +30,7 @@ void loop()
     int index = 0;
 
     // Zapisujemy tokeny do tablicy String
-    while (token != NULL && index < arraySize)
+    while (token != NULL && index < Config::screens_count)
     {
       tokens[index] = String(token); // Zapisujemy token jako String do tablicy
       token = strtok(NULL, ",");
@@ -45,10 +38,11 @@ void loop()
     }
 
     dmd.clearScreen();
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < Config::screens_count; i++)
     {
-      String numString = String(tokens[i]);
+      String numString = tokens[i];
       dmd.drawString(0, i * 16, numString.c_str(), GRAPHICS_ON, Config::font);
+      Serial.println(numString);
     }
   }
 }

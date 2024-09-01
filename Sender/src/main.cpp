@@ -3,6 +3,7 @@
 #include "RTClib.h"
 
 #include <Arduino.h>
+#include <EEPROM.h>
 #include <SPI.h>
 
 ///< possible device state
@@ -76,7 +77,7 @@ Device_state m_device_state = Device_state::startup; ///< actual device state
 
 IRrecv irrecv(Config::pin_led_ir);
 
-int16_t days_counter[7] = {1234, 5678, 910, 1112, 1314, 1516, 1718};
+int16_t days_counter[7] = {10, 11, 12, 13, 14, 15, 16};
 
 const unsigned long m_refresh_time_ms = 30000;
 
@@ -91,9 +92,27 @@ long get_days_from_start()
   TimeSpan timeSpan = now - startDate;
   return timeSpan.days();
 }
+
+void save_counters()
+{
+  for (int i = 0; i < 7; i++)
+  {
+    EEPROM.put<int16_t>(sizeof(int16_t) * i, days_counter[i]);
+  }
+}
+
+void load_counters()
+{
+  for (int i = 0; i < 7; i++)
+  {
+    int16_t val;
+    EEPROM.get<int16_t>(sizeof(int16_t) * i, val);
+    days_counter[i] = val;
+  }
+}
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(2400);
 
   IrReceiver.begin(Config::pin_led_ir, ENABLE_LED_FEEDBACK);
 
@@ -110,6 +129,10 @@ void setup()
   rtc.disable32K();
   days = get_days_from_start();
 
+  // TODO: ubnlock after first save
+  // load_counters();
+
+  delay(100);
   m_device_state = Device_state::refersh;
 }
 
@@ -205,6 +228,7 @@ void check_day()
     auto new_days = get_days_from_start() - days;
     increment_counter(new_days);
     check_record();
+    save_counters();
     days = now;
   }
 }
@@ -232,10 +256,19 @@ void idle(Button action)
 
 void reset_cunter(Button action)
 {
-  days_counter[0] = 0;
-  if (action == Button::BTN_PALY)
+  static int counter_to_reset = 0;
+
+  switch (action)
   {
-    m_device_state = Device_state::refersh;
+    case Button::BTN_PALY:
+    {
+      days_counter[counter_to_reset] = 0;
+      m_device_state = Device_state::refersh;
+      save_counters();
+    }
+    break;
+    default:
+      break;
   }
 }
 void loop()
