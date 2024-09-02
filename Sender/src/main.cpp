@@ -129,8 +129,7 @@ void setup()
   rtc.disable32K();
   days = get_days_from_start();
 
-  // TODO: ubnlock after first save
-  // load_counters();
+  load_counters();
 
   delay(100);
   m_device_state = Device_state::refersh;
@@ -148,24 +147,6 @@ Button button_action()
   }
   return (BTN_ERR);
 }
-
-void blink(int16_t* table, int8_t blink_screen)
-{
-  long loop_time = millis();
-  static long time;
-  static bool toggle;
-
-  if (loop_time - time > 100)
-  {
-    time = millis();
-    toggle = !toggle;
-  }
-
-  if (toggle)
-  {}
-  else
-  {}
-}
 void show(int16_t* table)
 {
   String dataString = "";
@@ -181,6 +162,35 @@ void show(int16_t* table)
 
   Serial.println(dataString);
 }
+void blink(int16_t* table, int8_t blink_screen, bool toggle)
+{
+  if (toggle)
+  {
+    String dataString = "";
+
+    for (int i = 0; i < 7; i++)
+    {
+      if (i == blink_screen)
+      {
+        dataString += " ";
+      }
+      else
+      {
+        dataString += String(table[i]);
+      }
+      if (i < 6)
+      {
+        dataString += ",";
+      }
+    }
+
+    Serial.println(dataString);
+  }
+  else
+  {
+    show(table);
+  }
+}
 void refresh()
 {
   show(days_counter);
@@ -188,15 +198,44 @@ void refresh()
   m_device_state = Device_state::idle;
 }
 
+void save_rtc(DateTime set_time)
+{
+  rtc.adjust(set_time);
+}
+
+void print_set_rtc(DateTime set_time, int8_t filed)
+{
+  static bool toggle;
+  static int16_t time[7] = {set_time.hour(), set_time.minute(), 0, 0, 0, 0, 0};
+  static unsigned long last_loop_time = 0;
+  unsigned long loop_time = millis();
+  if (loop_time - last_loop_time > 3000)
+  {
+    blink(time, filed, toggle);
+    toggle = !toggle;
+    last_loop_time = millis();
+  }
+}
 void set_rtc(Button action)
 {
+  static DateTime set_time = rtc.now();
+  static int8_t field_to_change = 0;
   switch (action)
   {
     case Button::BTN_NEXT:
+      field_to_change = !field_to_change;
       break;
     case Button::BTN_PREVIOUS:
+      field_to_change = !field_to_change;
       break;
+    case Button::BTN_PALY:
+    {
+      save_rtc(set_time);
+      m_device_state = Device_state::idle;
+    }
+    break;
     default:
+      print_set_rtc(set_time, field_to_change);
       break;
   }
 }
@@ -239,6 +278,9 @@ void idle(Button action)
     case Button::BTN_BACK:
       m_device_state = Device_state::reset_counter;
       break;
+    case Button::BTN_PALY:
+      m_device_state = Device_state::set_rtc;
+      break;
     default:
     {
       check_day();
@@ -254,21 +296,62 @@ void idle(Button action)
   }
 }
 
+void print_reset_counter(int counter_to_reset, bool force = false)
+{
+  static unsigned long last_loop_time = 0;
+  String dataString = "";
+
+  for (int i = 0; i < 7; i++)
+  {
+    if (i < 6)
+    {
+      dataString += String(days_counter[i]); // Konwersja liczby na String i dodanie do ciągu
+      dataString += ","; // Dodanie przecinka i spacji po każdej liczbie, z wyjątkiem ostatniej
+    }
+    else
+    {
+      dataString += String(counter_to_reset);
+    }
+  }
+
+  if (force)
+  {
+    Serial.println(dataString);
+  }
+  else
+  {
+    unsigned long loop_time = millis();
+    if (loop_time - last_loop_time > m_refresh_time_ms)
+    {
+      Serial.println(dataString);
+      last_loop_time = millis();
+    }
+  }
+}
 void reset_cunter(Button action)
 {
   static int counter_to_reset = 0;
 
-  switch (action)
+  if ((static_cast<int>(action) < 7) && (static_cast<int>(action) > 0))
   {
-    case Button::BTN_PALY:
+    counter_to_reset = static_cast<int>(action);
+    print_reset_counter(counter_to_reset, true);
+  }
+  else
+  {
+    switch (action)
     {
-      days_counter[counter_to_reset] = 0;
-      m_device_state = Device_state::refersh;
-      save_counters();
-    }
-    break;
-    default:
+      case Button::BTN_PALY:
+      {
+        days_counter[counter_to_reset - 1] = 0;
+        save_counters();
+        m_device_state = Device_state::refersh;
+      }
       break;
+      default:
+        print_reset_counter(counter_to_reset);
+        break;
+    }
   }
 }
 void loop()
@@ -277,6 +360,7 @@ void loop()
   if (IrReceiver.decode())
   {
     action = button_action();
+    delay(100);
   }
 
   switch (m_device_state)
@@ -294,6 +378,9 @@ void loop()
     break;
     case Device_state::reset_counter:
       reset_cunter(action);
+      break;
+    case Device_state::set_rtc:
+      set_rtc(action);
       break;
     default:
       break;
