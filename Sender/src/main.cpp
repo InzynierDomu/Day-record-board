@@ -137,6 +137,12 @@ void setup()
 
 Button button_action()
 {
+  if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT)
+  {
+    IrReceiver.resume();
+    return (BTN_ERR);
+  }
+
   Button_command command(Button::BTN_ERR, 0);
   if (IrReceiver.decodedIRData.protocol == NEC)
   {
@@ -203,40 +209,74 @@ void save_rtc(DateTime set_time)
   rtc.adjust(set_time);
 }
 
-void print_set_rtc(DateTime set_time, int8_t filed)
+void print_set_rtc(int8_t* set_time, int8_t filed)
 {
   static bool toggle;
-  static int16_t time[7] = {set_time.hour(), set_time.minute(), 0, 0, 0, 0, 0};
+  int16_t time[7] = {set_time[0], set_time[1], 0, 0, 0, 0, 0};
   static unsigned long last_loop_time = 0;
   unsigned long loop_time = millis();
-  if (loop_time - last_loop_time > 3000)
+  if (loop_time - last_loop_time > 2000)
   {
     blink(time, filed, toggle);
     toggle = !toggle;
     last_loop_time = millis();
   }
 }
+
+int get_units_digit(int number)
+{
+  return number % 10;
+}
+
+int get_tens_digit(int number)
+{
+  return (number / 10) % 10;
+}
 void set_rtc(Button action)
 {
   static DateTime set_time = rtc.now();
   static int8_t field_to_change = 0;
-  switch (action)
+  static int8_t digit_to_cahnge = 1;
+  static int8_t new_val[2]{set_time.hour(), set_time.minute()};
+  if (static_cast<int>(action) < 10)
   {
-    case Button::BTN_NEXT:
-      field_to_change = !field_to_change;
-      break;
-    case Button::BTN_PREVIOUS:
-      field_to_change = !field_to_change;
-      break;
-    case Button::BTN_PALY:
+    if (digit_to_cahnge == 1)
     {
-      save_rtc(set_time);
-      m_device_state = Device_state::idle;
+      int8_t val = get_tens_digit(new_val[field_to_change]);
+      new_val[field_to_change] -= (val * 10);
+      new_val[field_to_change] += static_cast<int>(action) * 10;
     }
-    break;
-    default:
-      print_set_rtc(set_time, field_to_change);
+    else
+    {
+      int8_t val = get_units_digit(new_val[field_to_change]);
+      new_val[field_to_change] -= val;
+      new_val[field_to_change] += static_cast<int>(action);
+    }
+    digit_to_cahnge = !digit_to_cahnge;
+  }
+  else
+  {
+    switch (action)
+    {
+      case Button::BTN_NEXT:
+      {
+        field_to_change = !field_to_change;
+        digit_to_cahnge = 1;
+      }
       break;
+      case Button::BTN_PALY:
+      {
+        // TODO change to new_val
+        save_rtc(set_time);
+        m_device_state = Device_state::idle;
+      }
+      break;
+      default:
+      {
+        print_set_rtc(new_val, field_to_change);
+      }
+      break;
+    }
   }
 }
 
@@ -360,7 +400,6 @@ void loop()
   if (IrReceiver.decode())
   {
     action = button_action();
-    delay(100);
   }
 
   switch (m_device_state)
