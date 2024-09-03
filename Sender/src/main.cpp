@@ -204,8 +204,10 @@ void refresh()
   m_device_state = Device_state::idle;
 }
 
-void save_rtc(DateTime set_time)
+void save_rtc(int8_t* new_val)
 {
+  DateTime now = rtc.now();
+  DateTime set_time(now.year(), now.month(), now.day(), new_val[1], new_val[0]);
   rtc.adjust(set_time);
 }
 
@@ -266,8 +268,7 @@ void set_rtc(Button action)
       break;
       case Button::BTN_PALY:
       {
-        // TODO change to new_val
-        save_rtc(set_time);
+        save_rtc(new_val);
         m_device_state = Device_state::idle;
       }
       break;
