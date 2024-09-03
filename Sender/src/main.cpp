@@ -323,11 +323,11 @@ void idle(Button action)
       break;
     default:
     {
-      check_day();
       static unsigned long last_loop_time = 0;
       unsigned long loop_time = millis();
       if (loop_time - last_loop_time > m_refresh_time_ms)
       {
+        check_day();
         m_device_state = Device_state::refersh;
         last_loop_time = millis();
       }
