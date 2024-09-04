@@ -22,9 +22,9 @@ Scoreboard design, from P10 LED matrices. 6 Day counters, and streak record. Eac
 <p>If any of my projects have helped you in your work, studies, or simply made your day better, please consider supporting my work. <strong><a href="https://tipo.live/p/inzynierdomu">LINK</a></strong></p>
 </div>
 
-![photo](https://github.com/InzynierDomu/Day-record-board/blob/master/foto.jpg)
+![photo](https://github.com/InzynierDomu/Day-record-board/blob/main/foto.jpg)
 
-![photo](https://github.com/InzynierDomu/Day-record-board/blob/master/foto2.jpg)
+![photo](https://github.com/InzynierDomu/Day-record-board/blob/main/foto2.jpg)
 
 ## Manual
 
