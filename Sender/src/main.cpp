@@ -48,7 +48,7 @@ struct Button_command
 
   void check_button(int16_t command, Button_command* map)
   {
-    for (size_t i = 0; i < 14; i++)
+    for (size_t i = 0; i < 15; i++)
     {
       if (map[i].command == command)
       {
@@ -58,7 +58,7 @@ struct Button_command
   }
 };
 
-Button_command buttons[14] = {Button_command(Button::BTN_0, 22),
+Button_command buttons[15] = {Button_command(Button::BTN_0, 22),
                               Button_command(Button::BTN_1, 12),
                               Button_command(Button::BTN_2, 24),
                               Button_command(Button::BTN_3, 94),
@@ -71,7 +71,8 @@ Button_command buttons[14] = {Button_command(Button::BTN_0, 22),
                               Button_command(Button::BTN_PALY, 21),
                               Button_command(Button::BTN_PREVIOUS, 7),
                               Button_command(Button::BTN_NEXT, 9),
-                              Button_command(Button::BTN_BACK, 67)};
+                              Button_command(Button::BTN_BACK, 67),
+                              Button_command(Button::BTN_ERR, 99)};
 
 Device_state m_device_state = Device_state::startup; ///< actual device state
 
@@ -143,7 +144,7 @@ Button button_action()
     return (BTN_ERR);
   }
 
-  Button_command command(Button::BTN_ERR, 0);
+  Button_command command(Button::BTN_ERR, 99);
   if (IrReceiver.decodedIRData.protocol == NEC)
   {
     auto recive_command = IrReceiver.decodedIRData.command;
@@ -151,6 +152,7 @@ Button button_action()
     command.check_button(recive_command, buttons);
     return (command.button);
   }
+  IrReceiver.resume();
   return (BTN_ERR);
 }
 void show(int16_t* table)
@@ -159,10 +161,10 @@ void show(int16_t* table)
 
   for (int i = 0; i < 7; i++)
   {
-    dataString += String(table[i]); // Konwersja liczby na String i dodanie do ciągu
+    dataString += String(table[i]);
     if (i < 6)
     {
-      dataString += ","; // Dodanie przecinka i spacji po każdej liczbie, z wyjątkiem ostatniej
+      dataString += ",";
     }
   }
 
@@ -189,7 +191,6 @@ void blink(int16_t* table, int8_t blink_screen, bool toggle)
         dataString += ",";
       }
     }
-
     Serial.println(dataString);
   }
   else
@@ -207,7 +208,7 @@ void refresh()
 void save_rtc(int8_t* new_val)
 {
   DateTime now = rtc.now();
-  DateTime set_time(now.year(), now.month(), now.day(), new_val[1], new_val[0]);
+  DateTime set_time(now.year(), now.month(), now.day(), new_val[0], new_val[1]);
   rtc.adjust(set_time);
 }
 
@@ -346,8 +347,8 @@ void print_reset_counter(int counter_to_reset, bool force = false)
   {
     if (i < 6)
     {
-      dataString += String(days_counter[i]); // Konwersja liczby na String i dodanie do ciągu
-      dataString += ","; // Dodanie przecinka i spacji po każdej liczbie, z wyjątkiem ostatniej
+      dataString += String(days_counter[i]);
+      dataString += ",";
     }
     else
     {
@@ -371,7 +372,7 @@ void print_reset_counter(int counter_to_reset, bool force = false)
 }
 void reset_cunter(Button action)
 {
-  static int counter_to_reset = 0;
+  static int counter_to_reset = 1;
 
   if ((static_cast<int>(action) < 7) && (static_cast<int>(action) > 0))
   {
@@ -386,6 +387,11 @@ void reset_cunter(Button action)
       {
         days_counter[counter_to_reset - 1] = 0;
         save_counters();
+        m_device_state = Device_state::refersh;
+      }
+      break;
+      case Button::BTN_BACK:
+      {
         m_device_state = Device_state::refersh;
       }
       break;
