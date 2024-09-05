@@ -28,4 +28,4 @@ jobs:
           pip install --upgrade platformio
 
       - name: Run PlatformIO Sender
-        run: pio run -e nanoatmega328 -d .\Sender
+        run: pio run -e nanoatmega328 -d /home/runner/work/Day-record-board/Sender
