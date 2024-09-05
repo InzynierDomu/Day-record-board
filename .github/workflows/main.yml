@@ -27,5 +27,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade platformio
 
-      - name: Run PlatformIO
-        run: pio run -e nanoatmega328
+      - name: Run PlatformIO Sender
+        run: pio run -e nanoatmega328 -d .\Sender
