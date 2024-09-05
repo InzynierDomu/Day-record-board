@@ -31,4 +31,4 @@ jobs:
         run: pio run -e nanoatmega328 -d ./Sender
 
       - name: Run PlatformIO Recive
-        run: pio run -e nanoatmega328 -d ./Recive
+        run: pio run -e nanoatmega328 -d ./Reciver
