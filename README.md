@@ -51,7 +51,13 @@ After turn on the device starts in normal mode, shows counter values ​​and s
 
 ## Scheme
 ## IDE
-The project is prepared for the Platform IO environment. A video on how to install such an environment can be watched on this [video](https://youtu.be/Em9NuebT2Kc).
+The project is prepared for the Platform IO environment. A video on how to install such an environment can be watched on this [video PL](https://youtu.be/Em9NuebT2Kc).
 <br><br>
-Formatting is done using clang-format. The description of the tool configuration is in the [video](https://youtu.be/xxuaOG0WjIE).
+
+To upload software, the UART connection between Arduino must be disconnected
+
+If you don't have an environment and don't want to prepare it, you can use the autodeply.bat script, which will configure everything and, if the board is connected to the computer, will load the project. You need only instaled Python and an Internet connection.
+
+Formatting is done using clang-format. The description of the tool configuration is in the [video PL](https://youtu.be/xxuaOG0WjIE).
+<br><br>
 
