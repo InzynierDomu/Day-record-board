@@ -1,10 +1,12 @@
 #include "Config.h"
+#include "IR_piolt.h"
 #include "IRremote.h"
 #include "RTClib.h"
 
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <SPI.h>
+
 
 ///< possible device state
 enum class Device_state
@@ -17,70 +19,11 @@ enum class Device_state
   reset_counter
 };
 
-enum Button
-{
-  BTN_0 = 0,
-  BTN_1,
-  BTN_2,
-  BTN_3,
-  BTN_4,
-  BTN_5,
-  BTN_6,
-  BTN_7,
-  BTN_8,
-  BTN_9,
-  BTN_PALY = 10,
-  BTN_NEXT = 11,
-  BTN_PREVIOUS = 12,
-  BTN_BACK = 13,
-  BTN_ERR = 99
-};
-
-struct Button_command
-{
-  Button button;
-  int16_t command;
-
-  Button_command(Button button_, int16_t command_)
-  : button(button_)
-  , command(command_)
-  {}
-
-  void check_button(int16_t command, Button_command* map)
-  {
-    for (size_t i = 0; i < 15; i++)
-    {
-      if (map[i].command == command)
-      {
-        button = map[i].button;
-      }
-    }
-  }
-};
-
-Button_command buttons[15] = {Button_command(Button::BTN_0, 22),
-                              Button_command(Button::BTN_1, 12),
-                              Button_command(Button::BTN_2, 24),
-                              Button_command(Button::BTN_3, 94),
-                              Button_command(Button::BTN_4, 8),
-                              Button_command(Button::BTN_5, 28),
-                              Button_command(Button::BTN_6, 90),
-                              Button_command(Button::BTN_7, 66),
-                              Button_command(Button::BTN_8, 82),
-                              Button_command(Button::BTN_9, 74),
-                              Button_command(Button::BTN_PALY, 21),
-                              Button_command(Button::BTN_PREVIOUS, 7),
-                              Button_command(Button::BTN_NEXT, 9),
-                              Button_command(Button::BTN_BACK, 67),
-                              Button_command(Button::BTN_ERR, 99)};
-
 Device_state m_device_state = Device_state::startup; ///< actual device state
 
 IRrecv irrecv(Config::pin_led_ir);
 
 int16_t days_counter[7] = {10, 11, 12, 13, 14, 15, 16};
-
-const unsigned long m_refresh_time_ms = 30000;
 
 RTC_DS3231 rtc;
 
@@ -113,7 +56,7 @@ void load_counters()
 }
 void setup()
 {
-  Serial.begin(2400);
+  Serial.begin(Config::baudrate);
 
   IrReceiver.begin(Config::pin_led_ir, ENABLE_LED_FEEDBACK);
 
@@ -136,24 +79,24 @@ void setup()
   m_device_state = Device_state::refersh;
 }
 
-Button button_action()
+IR_pilot::Button button_action()
 {
   if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_IS_REPEAT)
   {
     IrReceiver.resume();
-    return (BTN_ERR);
+    return (IR_pilot::BTN_ERR);
   }
 
-  Button_command command(Button::BTN_ERR, 99);
+  IR_pilot::Button_command command(IR_pilot::Button::BTN_ERR, 99);
   if (IrReceiver.decodedIRData.protocol == NEC)
   {
     auto recive_command = IrReceiver.decodedIRData.command;
     IrReceiver.resume();
-    command.check_button(recive_command, buttons);
+    command.check_button(recive_command, IR_pilot::buttons);
     return (command.button);
   }
   IrReceiver.resume();
-  return (BTN_ERR);
+  return (IR_pilot::BTN_ERR);
 }
 void show(int16_t* table)
 {
@@ -218,7 +161,7 @@ void print_set_rtc(int8_t* set_time, int8_t filed)
   int16_t time[7] = {set_time[0], set_time[1], 0, 0, 0, 0, 0};
   static unsigned long last_loop_time = 0;
   unsigned long loop_time = millis();
-  if (loop_time - last_loop_time > 2000)
+  if (loop_time - last_loop_time > Config::blink_time)
   {
     blink(time, filed, toggle);
     toggle = !toggle;
@@ -235,15 +178,15 @@ int get_tens_digit(int number)
 {
   return (number / 10) % 10;
 }
-void set_rtc(Button action)
+void set_rtc(IR_pilot::Button action)
 {
   static DateTime set_time = rtc.now();
   static int8_t field_to_change = 0;
-  static int8_t digit_to_cahnge = 1;
+  static int8_t digit_to_change = 1;
   static int8_t new_val[2]{set_time.hour(), set_time.minute()};
   if (static_cast<int>(action) < 10)
   {
-    if (digit_to_cahnge == 1)
+    if (digit_to_change == 1)
     {
       int8_t val = get_tens_digit(new_val[field_to_change]);
       new_val[field_to_change] -= (val * 10);
@@ -255,19 +198,19 @@ void set_rtc(Button action)
       new_val[field_to_change] -= val;
       new_val[field_to_change] += static_cast<int>(action);
     }
-    digit_to_cahnge = !digit_to_cahnge;
+    digit_to_change = !digit_to_change;
   }
   else
   {
     switch (action)
     {
-      case Button::BTN_NEXT:
+      case IR_pilot::Button::BTN_NEXT:
       {
         field_to_change = !field_to_change;
-        digit_to_cahnge = 1;
+        digit_to_change = 1;
       }
       break;
-      case Button::BTN_PALY:
+      case IR_pilot::Button::BTN_PLAY:
       {
         save_rtc(new_val);
         m_device_state = Device_state::idle;
@@ -313,21 +256,21 @@ void check_day()
     days = now;
   }
 }
-void idle(Button action)
+void idle(IR_pilot::Button action)
 {
   switch (action)
   {
-    case Button::BTN_BACK:
+    case IR_pilot::Button::BTN_BACK:
       m_device_state = Device_state::reset_counter;
       break;
-    case Button::BTN_PALY:
+    case IR_pilot::Button::BTN_PLAY:
       m_device_state = Device_state::set_rtc;
       break;
     default:
     {
       static unsigned long last_loop_time = 0;
       unsigned long loop_time = millis();
-      if (loop_time - last_loop_time > m_refresh_time_ms)
+      if (loop_time - last_loop_time > Config::screen_refresh_time)
       {
         check_day();
         m_device_state = Device_state::refersh;
@@ -363,18 +306,18 @@ void print_reset_counter(int counter_to_reset, bool force = false)
   else
   {
     unsigned long loop_time = millis();
-    if (loop_time - last_loop_time > m_refresh_time_ms)
+    if (loop_time - last_loop_time > Config::screen_refresh_time)
     {
       Serial.println(dataString);
       last_loop_time = millis();
     }
   }
 }
-void reset_cunter(Button action)
+void reset_cunter(IR_pilot::Button action)
 {
   static int counter_to_reset = 1;
 
-  if ((static_cast<int>(action) < 7) && (static_cast<int>(action) > 0))
+  if ((static_cast<int>(action) < 8) && (static_cast<int>(action) > 0))
   {
     counter_to_reset = static_cast<int>(action);
     print_reset_counter(counter_to_reset, true);
@@ -383,14 +326,14 @@ void reset_cunter(Button action)
   {
     switch (action)
     {
-      case Button::BTN_PALY:
+      case IR_pilot::Button::BTN_PLAY:
       {
         days_counter[counter_to_reset - 1] = 0;
         save_counters();
         m_device_state = Device_state::refersh;
       }
       break;
-      case Button::BTN_BACK:
+      case IR_pilot::Button::BTN_BACK:
       {
         m_device_state = Device_state::refersh;
       }
@@ -403,7 +346,7 @@ void reset_cunter(Button action)
 }
 void loop()
 {
-  Button action = Button::BTN_ERR;
+  IR_pilot::Button action = IR_pilot::Button::BTN_ERR;
   if (IrReceiver.decode())
   {
     action = button_action();
