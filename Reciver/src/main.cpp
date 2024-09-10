@@ -10,7 +10,7 @@ String tokens[Config::screens_count];
 
 void setup()
 {
-  Serial.begin(2400);
+  Serial.begin(Config::baudrate);
 
   dmd.setBrightness(255);
   dmd.selectFont(Config::font);
@@ -29,10 +29,9 @@ void loop()
     char* token = strtok(receivedChars, ",");
     int index = 0;
 
-    // Zapisujemy tokeny do tablicy String
     while (token != NULL && index < Config::screens_count)
     {
-      tokens[index] = String(token); // Zapisujemy token jako String do tablicy
+      tokens[index] = String(token);
       token = strtok(NULL, ",");
       index++;
     }
