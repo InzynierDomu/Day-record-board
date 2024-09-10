@@ -1,12 +1,11 @@
 #include "Config.h"
 #include "IR_piolt.h"
 #include "IRremote.h"
+#include "Memory.h"
 #include "RTClib.h"
 
 #include <Arduino.h>
-#include <EEPROM.h>
 #include <SPI.h>
-
 
 ///< possible device state
 enum class Device_state
@@ -37,23 +36,23 @@ long get_days_from_start()
   return timeSpan.days();
 }
 
-void save_counters()
-{
-  for (int i = 0; i < 7; i++)
-  {
-    EEPROM.put<int16_t>(sizeof(int16_t) * i, days_counter[i]);
-  }
-}
+// void save_counters()
+// {
+//   for (int i = 0; i < 7; i++)
+//   {
+//     EEPROM.put<int16_t>(sizeof(int16_t) * i, days_counter[i]);
+//   }
+// }
 
-void load_counters()
-{
-  for (int i = 0; i < 7; i++)
-  {
-    int16_t val;
-    EEPROM.get<int16_t>(sizeof(int16_t) * i, val);
-    days_counter[i] = val;
-  }
-}
+// void load_counters()
+// {
+//   for (int i = 0; i < 7; i++)
+//   {
+//     int16_t val;
+//     EEPROM.get<int16_t>(sizeof(int16_t) * i, val);
+//     days_counter[i] = val;
+//   }
+// }
 void setup()
 {
   Serial.begin(Config::baudrate);
@@ -73,7 +72,7 @@ void setup()
   rtc.disable32K();
   days = get_days_from_start();
 
-  load_counters();
+  Memory::load_counters(days_counter);
 
   delay(100);
   m_device_state = Device_state::refersh;
@@ -244,6 +243,7 @@ void check_record()
     }
   }
 }
+
 void check_day()
 {
   auto now = get_days_from_start();
@@ -252,7 +252,7 @@ void check_day()
     auto new_days = get_days_from_start() - days;
     increment_counter(new_days);
     check_record();
-    save_counters();
+    Memory::save_counters(days_counter);
     days = now;
   }
 }
@@ -329,7 +329,7 @@ void reset_cunter(IR_pilot::Button action)
       case IR_pilot::Button::BTN_PLAY:
       {
         days_counter[counter_to_reset - 1] = 0;
-        save_counters();
+        Memory::save_counters(days_counter);
         m_device_state = Device_state::refersh;
       }
       break;
