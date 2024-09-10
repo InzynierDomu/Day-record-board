@@ -36,23 +36,6 @@ long get_days_from_start()
   return timeSpan.days();
 }
 
-// void save_counters()
-// {
-//   for (int i = 0; i < 7; i++)
-//   {
-//     EEPROM.put<int16_t>(sizeof(int16_t) * i, days_counter[i]);
-//   }
-// }
-
-// void load_counters()
-// {
-//   for (int i = 0; i < 7; i++)
-//   {
-//     int16_t val;
-//     EEPROM.get<int16_t>(sizeof(int16_t) * i, val);
-//     days_counter[i] = val;
-//   }
-// }
 void setup()
 {
   Serial.begin(Config::baudrate);
@@ -66,12 +49,16 @@ void setup()
   }
   if (rtc.lostPower())
   {
-
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
+
   rtc.disable32K();
   days = get_days_from_start();
 
+  if (Config::force_save_eeprom)
+  {
+    Memory::save_counters(Config::default_days_counter);
+  }
   Memory::load_counters(days_counter);
 
   delay(100);
