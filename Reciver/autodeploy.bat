@@ -6,8 +6,7 @@ set current_datetime=%date% %time%
     echo Log started at: %current_datetime%
 ) > "%log_file%" 2>&1
 
-echo check Python 
-(
+
     echo Checking if Python is installed...
     python --version
     if %errorlevel% neq 0 (
@@ -18,7 +17,14 @@ echo check Python
     ) else (
         echo Python is already installed.
     )
-) >> "%log_file%" 2>&1
+
+    echo Checking if pip is installed...
+    pip --version
+    if %errorlevel% neq 0 (
+    ) else (
+        python get-pip.py
+        echo pip is already installed.
+    )
 
 set file_path="pip_show_platformio_info.txt"
 :: Check if PlatformIO is installed
