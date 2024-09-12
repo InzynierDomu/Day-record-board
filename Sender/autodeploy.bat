@@ -9,7 +9,7 @@ set current_datetime=%date% %time%
     echo Checking if Python is installed...
     python --version
     if %errorlevel% neq 0 (
-        echo Python is not installed. Please install Python and try again.
+        echo Python is not installed. https://www.python.org/downloads/ Please install Python and try again.
         echo Press Enter to exit.
         pause >nul
         exit 
@@ -20,8 +20,8 @@ set current_datetime=%date% %time%
     echo Checking if pip is installed...
     pip --version
     if %errorlevel% neq 0 (
+        get-pip.py
     ) else (
-        python get-pip.py
         echo pip is already installed.
     )
 
