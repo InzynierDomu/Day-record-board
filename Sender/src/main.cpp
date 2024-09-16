@@ -15,7 +15,8 @@ enum class Device_state
   refersh,
   reset,
   set_rtc,
-  reset_counter
+  reset_counter,
+  set_counter
 };
 
 Device_state m_device_state = Device_state::startup; ///< actual device state
@@ -173,8 +174,10 @@ void set_rtc(IR_pilot::Button action, bool load = false)
   if (load)
   {
     set_time = rtc.now();
-    new_val[2]{set_time.hour(), set_time.minute()};
+    new_val[0] = set_time.minute();
+    new_val[1] = set_time.hour();
   }
+
   if (static_cast<int>(action) < 10)
   {
     if (digit_to_change == 1)
@@ -204,15 +207,58 @@ void set_rtc(IR_pilot::Button action, bool load = false)
       case IR_pilot::Button::BTN_PLAY:
       {
         save_rtc(new_val);
-        m_device_state = Device_state::idle;
+        m_device_state = Device_state::refersh;
       }
       break;
+      case IR_pilot::Button::BTN_BACK:
+        m_device_state = Device_state::refersh;
+        break;
       default:
       {
         print_set_rtc(new_val, field_to_change);
       }
       break;
     }
+  }
+}
+
+void set_counter(IR_pilot::Button action)
+{
+  static int16_t new_days_counter[7] = {10, 11, 12, 13, 14, 15, 16};
+  static int8_t actual_field = 0;
+  static int8_t multiply = 1;
+  switch (action)
+  {
+    case IR_pilot::Button::BTN_PLAY:
+    {
+      for (size_t i = 0; i < 7; i++)
+      {
+        days_counter[i] = new_days_counter[i];
+      }
+      multiply = 1;
+      m_device_state = Device_state::refersh;
+    }
+    break;
+    case IR_pilot::Button::BTN_BACK:
+      m_device_state = Device_state::refersh;
+      break;
+    case IR_pilot::Button::BTN_NEXT:
+      if (actual_field < 7)
+      {
+        actual_field++;
+        multiply = 1;
+      }
+      break;
+    case IR_pilot::Button::BTN_PREVIOUS:
+      if (actual_field > 0)
+      {
+        actual_field--;
+        multiply = 1;
+      }
+      break;
+      break;
+    default:
+      break;
   }
 }
 
@@ -256,8 +302,13 @@ void idle(IR_pilot::Button action)
       m_device_state = Device_state::reset_counter;
       break;
     case IR_pilot::Button::BTN_PLAY:
+    {
       m_device_state = Device_state::set_rtc;
       set_rtc(IR_pilot::Button::BTN_ERR, true);
+    }
+    break;
+    case IR_pilot::Button::BTN_NEXT:
+      m_device_state = Device_state::set_counter;
       break;
     default:
     {
@@ -363,6 +414,9 @@ void loop()
       break;
     case Device_state::set_rtc:
       set_rtc(action);
+      break;
+    case Device_state::set_counter:
+      set_counter(action);
       break;
     default:
       break;
