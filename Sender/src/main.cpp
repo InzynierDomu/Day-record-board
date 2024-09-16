@@ -164,12 +164,17 @@ int get_tens_digit(int number)
 {
   return (number / 10) % 10;
 }
-void set_rtc(IR_pilot::Button action)
+void set_rtc(IR_pilot::Button action, bool load = false)
 {
   static DateTime set_time = rtc.now();
   static int8_t field_to_change = 0;
   static int8_t digit_to_change = 1;
   static int8_t new_val[2]{set_time.hour(), set_time.minute()};
+  if (load)
+  {
+    set_time = rtc.now();
+    new_val[2]{set_time.hour(), set_time.minute()};
+  }
   if (static_cast<int>(action) < 10)
   {
     if (digit_to_change == 1)
@@ -252,6 +257,7 @@ void idle(IR_pilot::Button action)
       break;
     case IR_pilot::Button::BTN_PLAY:
       m_device_state = Device_state::set_rtc;
+      set_rtc(IR_pilot::Button::BTN_ERR, true);
       break;
     default:
     {
