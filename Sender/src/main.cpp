@@ -19,6 +19,28 @@ enum class Device_state
   set_counter
 };
 
+struct simple_time
+{
+  simple_time(uint8_t _hour, uint8_t _minutes)
+  : hour(_hour)
+  , minutes(_minutes){};
+  uint8_t hour;
+  uint8_t minutes;
+
+  bool check_range()
+  {
+    if (hour > 23)
+    {
+      return false;
+    }
+    if (minutes > 59)
+    {
+      return false;
+    }
+    return true;
+  }
+};
+
 Device_state m_device_state = Device_state::startup; ///< actual device state
 
 IRrecv irrecv(Config::pin_led_ir);
@@ -56,10 +78,6 @@ void setup()
   rtc.disable32K();
   days = get_days_from_start();
 
-  if (Config::force_save_eeprom)
-  {
-    Memory::save_counters(Config::default_days_counter);
-  }
   Memory::load_counters(days_counter);
 
   delay(100);
@@ -135,17 +153,17 @@ void refresh()
   m_device_state = Device_state::idle;
 }
 
-void save_rtc(int8_t* new_val)
+void save_rtc(simple_time new_val)
 {
   DateTime now = rtc.now();
-  DateTime set_time(now.year(), now.month(), now.day(), new_val[0], new_val[1]);
+  DateTime set_time(now.year(), now.month(), now.day(), new_val.hour, new_val.minutes);
   rtc.adjust(set_time);
 }
 
-void print_set_rtc(int8_t* set_time, int8_t filed)
+void print_set_rtc(simple_time set_time, int8_t filed)
 {
   static bool toggle;
-  int16_t time[7] = {set_time[0], set_time[1], 0, 0, 0, 0, 0};
+  int16_t time[7] = {set_time.hour, set_time.minutes, 0, 0, 0, 0, 0};
   static unsigned long last_loop_time = 0;
   unsigned long loop_time = millis();
   if (loop_time - last_loop_time > Config::blink_time)
@@ -170,29 +188,48 @@ void set_rtc(IR_pilot::Button action, bool load = false)
   static DateTime set_time = rtc.now();
   static int8_t field_to_change = 0;
   static int8_t digit_to_change = 1;
-  static int8_t new_val[2]{set_time.hour(), set_time.minute()};
+  static simple_time new_val(set_time.hour(), set_time.minute());
   if (load)
   {
     set_time = rtc.now();
-    new_val[0] = set_time.minute();
-    new_val[1] = set_time.hour();
+    new_val.minutes = set_time.minute();
+    new_val.hour = set_time.hour();
   }
 
   if (static_cast<int>(action) < 10)
   {
-    if (digit_to_change == 1)
+    if (field_to_change == 0)
     {
-      int8_t val = get_tens_digit(new_val[field_to_change]);
-      new_val[field_to_change] -= (val * 10);
-      new_val[field_to_change] += static_cast<int>(action) * 10;
+      if (digit_to_change == 1)
+      {
+        int8_t val = get_tens_digit(new_val.hour);
+        new_val.hour -= (val * 10);
+        new_val.hour += static_cast<int>(action) * 10;
+      }
+      else
+      {
+        int8_t val = get_units_digit(new_val.hour);
+        new_val.hour -= val;
+        new_val.hour += static_cast<int>(action);
+      }
+      digit_to_change = !digit_to_change;
     }
     else
     {
-      int8_t val = get_units_digit(new_val[field_to_change]);
-      new_val[field_to_change] -= val;
-      new_val[field_to_change] += static_cast<int>(action);
+      if (digit_to_change == 1)
+      {
+        int8_t val = get_tens_digit(new_val.minutes);
+        new_val.minutes -= (val * 10);
+        new_val.minutes += static_cast<int>(action) * 10;
+      }
+      else
+      {
+        int8_t val = get_units_digit(new_val.minutes);
+        new_val.minutes -= val;
+        new_val.minutes += static_cast<int>(action);
+      }
+      digit_to_change = !digit_to_change;
     }
-    digit_to_change = !digit_to_change;
   }
   else
   {
@@ -206,8 +243,11 @@ void set_rtc(IR_pilot::Button action, bool load = false)
       break;
       case IR_pilot::Button::BTN_PLAY:
       {
-        save_rtc(new_val);
-        m_device_state = Device_state::refersh;
+        if (new_val.check_range())
+        {
+          save_rtc(new_val);
+          m_device_state = Device_state::refersh;
+        }
       }
       break;
       case IR_pilot::Button::BTN_BACK:
@@ -227,38 +267,47 @@ void set_counter(IR_pilot::Button action)
   static int16_t new_days_counter[7] = {10, 11, 12, 13, 14, 15, 16};
   static int8_t actual_field = 0;
   static int8_t multiply = 1;
-  switch (action)
+
+  if (static_cast<int>(action) < 10)
+  {}
+  else
   {
-    case IR_pilot::Button::BTN_PLAY:
+    switch (action)
     {
-      for (size_t i = 0; i < 7; i++)
+      case IR_pilot::Button::BTN_PLAY:
       {
-        days_counter[i] = new_days_counter[i];
+        for (size_t i = 0; i < 7; i++)
+        {
+          days_counter[i] = new_days_counter[i];
+        }
+        multiply = 1;
+        m_device_state = Device_state::refersh;
+        refresh();
       }
-      multiply = 1;
-      m_device_state = Device_state::refersh;
+      break;
+      case IR_pilot::Button::BTN_BACK:
+      {
+        m_device_state = Device_state::refersh;
+        refresh();
+      }
+      break;
+      case IR_pilot::Button::BTN_NEXT:
+        if (actual_field < 7)
+        {
+          actual_field++;
+          multiply = 1;
+        }
+        break;
+      case IR_pilot::Button::BTN_PREVIOUS:
+        if (actual_field > 0)
+        {
+          actual_field--;
+          multiply = 1;
+        }
+        break;
+      default:
+        break;
     }
-    break;
-    case IR_pilot::Button::BTN_BACK:
-      m_device_state = Device_state::refersh;
-      break;
-    case IR_pilot::Button::BTN_NEXT:
-      if (actual_field < 7)
-      {
-        actual_field++;
-        multiply = 1;
-      }
-      break;
-    case IR_pilot::Button::BTN_PREVIOUS:
-      if (actual_field > 0)
-      {
-        actual_field--;
-        multiply = 1;
-      }
-      break;
-      break;
-    default:
-      break;
   }
 }
 
@@ -299,8 +348,11 @@ void idle(IR_pilot::Button action)
   switch (action)
   {
     case IR_pilot::Button::BTN_BACK:
+    {
       m_device_state = Device_state::reset_counter;
-      break;
+      reset_cunter(IR_pilot::Button::BTN_ERR);
+    }
+    break;
     case IR_pilot::Button::BTN_PLAY:
     {
       m_device_state = Device_state::set_rtc;
@@ -308,8 +360,11 @@ void idle(IR_pilot::Button action)
     }
     break;
     case IR_pilot::Button::BTN_NEXT:
+    {
       m_device_state = Device_state::set_counter;
-      break;
+      set_counter(IR_pilot::Button::BTN_ERR);
+    }
+    break;
     default:
     {
       static unsigned long last_loop_time = 0;
