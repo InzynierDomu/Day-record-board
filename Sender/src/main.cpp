@@ -311,12 +311,8 @@ void set_counter(IR_pilot::Button action, bool load = false)
   if (static_cast<int>(action) < 10)
   {
     int16_t val = get_digit_at_position(new_days_counter[actual_field], multiply);
-    Serial.println(val);
     new_days_counter[actual_field] -= (val * power_of_10(multiply));
-    Serial.println(new_days_counter[actual_field]);
-    Serial.println(power_of_10(multiply));
     new_days_counter[actual_field] += (static_cast<int>(action) * power_of_10(multiply));
-    Serial.println(new_days_counter[actual_field]);
     if (multiply < 5)
     {
       multiply++;
