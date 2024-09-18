@@ -32,3 +32,12 @@ jobs:
 
       - name: Run PlatformIO Recive
         run: pio run -e nanoatmega328 -d ./Reciver
+
+      - name: palntuml
+        id: plantuml
+        uses: grassedge/generate-plantuml-action@v1.5
+        with:
+          path: sender
+          message: "Render PlantUML files"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

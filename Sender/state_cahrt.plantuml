@@ -1,0 +1,12 @@
+@startuml
+[*]->startup
+startup --> refresh
+refresh --> idle : finish
+idle --> refresh : time_callback
+idle --> set_rtc : play_button
+set_rtc --> refresh : back / play button
+idle --> set_counter : next_button
+set_counter --> refresh : back / play button
+idle --> reset_counter : back_button
+reset_counter --> refresh : back / play button
+@enduml
