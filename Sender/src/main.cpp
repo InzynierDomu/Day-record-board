@@ -331,6 +331,7 @@ void set_counter(IR_pilot::Button action, bool load = false)
             days_counter[i] = new_days_counter[i];
           }
           multiply = 0;
+          Memory::save_counters(days_counter);
           m_device_state = Device_state::refersh;
           refresh();
         }
