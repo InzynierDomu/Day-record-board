@@ -32,10 +32,12 @@ Scoreboard design, from P10 LED matrices. 6 Day counters, and streak record. Eac
 Resetting the counter and adjust the clock requires an IR pilot.
 After turn on the device starts in normal mode, shows counter values ​​and streak record.
 
+![photo](https://github.com/InzynierDomu/Day-record-board/blob/main/pilot.jpg)
+
 ### Resetting-counter
 
 - To enter the counter reset mode, select the back button (reverse arrow) on the pilot in the normal mode.
-- Use the keys 1 to 6 to select the counter to be reset.
+- Use the keys 1 to 7 to select the counter to be reset (7 is for record counter).
 - The value will appear on the board where the record streak is in normal mode.
 - The play button accepts and resets the counter.
 - The back button cancels the action and returns to normal mode.
@@ -48,6 +50,19 @@ After turn on the device starts in normal mode, shows counter values ​​and s
 - To change the hours to minutes and vice versa, press the next button.
 - To enter a new value of the flashing value, enter the next digits using the buttons. Entering the next digits will overwrite it. The format is hh-mm, e.g. 14.05.
 - Press the play button again to accept the time change.
+- The back button cancels the action and returns to normal mode.
+
+### Set_manual_counter
+
+- Pressing the next button in normal mode takes to the manual set counter mode.
+- With next/previus button change counter to edit.
+- To enter a new value of the flashing value, enter the next digits using the buttons. Entering the next digits will overwrite old value. e.g. press 3,2,1 set 123
+- Press the play button to accept the change.
+- The back button cancels the action and returns to normal mode.
+
+### Config_files
+
+TBD
 
 ## Scheme
 ## IDE
