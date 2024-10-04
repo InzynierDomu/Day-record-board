@@ -26,6 +26,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade platformio
+      - name: Set up GCC
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: latest
 
       - name: Run PlatformIO Sender
         run: pio run -e nanoatmega328 -d ./Sender
