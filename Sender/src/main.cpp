@@ -3,6 +3,7 @@
 #include "IRremote.h"
 #include "Memory.h"
 #include "RTClib.h"
+#include "Serial_port.h"
 
 #include <Arduino.h>
 #include <SPI.h>

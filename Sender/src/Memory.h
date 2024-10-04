@@ -6,20 +6,20 @@
 
 namespace Memory
 {
-void save_counters(int16_t* table)
+void save_counters(uint16_t* table)
 {
   for (int i = 0; i < 7; i++)
   {
-    EEPROM.put<int16_t>(sizeof(int16_t) * i, table[i]);
+    EEPROM.put<uint16_t>(sizeof(uint16_t) * i, table[i]);
   }
 }
 
-void load_counters(int16_t* table)
+void load_counters(uint16_t* table)
 {
   for (int i = 0; i < 7; i++)
   {
-    int16_t val;
-    EEPROM.get<int16_t>(sizeof(int16_t) * i, val);
+    uint16_t val;
+    EEPROM.get<uint16_t>(sizeof(uint16_t) * i, val);
     table[i] = val;
   }
 }

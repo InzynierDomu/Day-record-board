@@ -1,5 +1,10 @@
 #pragma once
 
+#include "RTClib.h"
+
+#include <stdint.h>
+
+
 struct simple_time
 {
   simple_time(uint8_t _hour, uint8_t _minutes)
@@ -25,6 +30,7 @@ class IRTC
 {
   public:
   virtual ~IRTC() {}
-  virtual init() = 0;
-  virtual adjust() = 0;
+  virtual bool init() = 0;
+  virtual void adjust(simple_time time) = 0;
+  virtual DateTime get_date() = 0;
 };
